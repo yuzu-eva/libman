@@ -21,7 +21,10 @@ Samurai Champloo,14
 Bakemonogatari,done  
 Steins; Gate,1  
 
-and so on.  
+and so on. The episode is actually stored as a string, so you can put "done" or
+"abandoned" or anything else you want in there. Allows for a maximum length of
+11.  
+
 You need to set your filepath in the main.c, but everything else should work
 out of the box.  
 The Makefile uses clang, but you can change it to gcc in the second line. Or

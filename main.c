@@ -163,6 +163,7 @@ int main(int argc, char **argv)
 {
     mode_e mode = PRINT_MODE;
     int opt;
+    entry_t *entry;
     while ((opt = getopt(argc, argv, "msae")) != -1) {
         switch (opt) {
         case 'm': mode = MATCH_MODE; break;
@@ -207,12 +208,12 @@ int main(int argc, char **argv)
         // [...]
         // free(selection);
 
-        entry_t *res = get_entry(argv[optind]);
-        if (res->name[0] == '\0') {
-            printf("Entry not found");
+        entry = get_entry(argv[optind]);
+        if (entry->name[0] == '\0') {
+            printf("Entry not found\n");
             break;
         }
-        printf("Name: %s Episode: %s", res->name, res->episode);
+        printf("Name: %s Episode: %s", entry->name, entry->episode);
         break;
     case APPEND_MODE:
         append_entry(argv[optind], argv[optind+1]);

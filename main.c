@@ -15,13 +15,13 @@ typedef enum {
     SEARCH_MODE,
     APPEND_MODE,
     EDIT_MODE,
-    PRINT_MODE
 } mode_e;
 
 void print_help()
 {
     printf("usage: myal [-s <name>] [-ae <name> <episode>]                   \n");
-    printf(" -l                 Prints all entries                           \n");
+    printf(" Prints all entries by default                                   \n");
+    printf("\n");
     printf(" -m <name>          Prints all anime containing the given string \n");
     printf(" -s <name>          Search for a specific anime by name          \n");
     printf(" -a <name> <number> Append new anime and episode to file         \n");
@@ -76,14 +76,15 @@ void print_matches(const char *sel)
     while (fgets(line, sizeof(line), fp)) {
         char *tmp = strdup(line);
         char *name = getfield(tmp, 1);
+        free(tmp);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
+        free(tmp);
 
         if (strcasestr(name, sel) != NULL) {
             printf("Name: %s Episode: %s", name, episode);
             entry_found = 1;
         }
-        free(tmp);
     }
     if (!entry_found) {
         printf("Entry not found\n");
@@ -105,14 +106,15 @@ void print_single_match(const char *sel)
     while (fgets(line, sizeof(line), fp)) {
         char *tmp = strdup(line);
         char *name = getfield(tmp, 1);
+        free(tmp);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
+        free(tmp);
 
         if (strncasecmp(name, sel, strlen(sel)) == 0) {
             printf("Name: %s Episode: %s", name, episode);
             entry_found = 1;
         }
-        free(tmp);
     }
     if (!entry_found) {
         printf("Entry not found\n");
@@ -166,8 +168,10 @@ void edit_entry(const entry_t *entry)
     while (fgets(line, sizeof(line), fp_old)) {
         char *tmp = strdup(line);
         char *old_name = getfield(tmp, 1);
+        free(tmp);
         tmp = strdup(line);
         char *old_ep = getfield(tmp, 2);
+        free(tmp);
         
         if (strncasecmp(old_name, entry->name, strlen(entry->name)) == 0) {
             fprintf(fp_new, "%s,%s\n", old_name, entry->episode);
@@ -175,24 +179,36 @@ void edit_entry(const entry_t *entry)
         } else {
             fprintf(fp_new, "%s,%s", old_name, old_ep);
         }
-        free(tmp);
     }
     if (!entry_found) {
         printf("Entry not found\n");
     }
-    remove(filename);
-    rename("temp.csv", filename);
     fclose(fp_old);
     fclose(fp_new);
+    remove(filename);
+    rename("temp.csv", filename);
 }
+
+void check_args(int argc, int expected_count) {
+    if (argc < expected_count) {
+        fprintf(stderr, "ERROR: missing argument\n");
+        print_help();
+        exit(EXIT_FAILURE);
+    }
+    if (argc > expected_count) {
+        fprintf(stderr, "ERROR: too many arguments\n");
+        print_help();
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 int main(int argc, char **argv)
 {
     mode_e mode;
     int opt;
-    while ((opt = getopt(argc, argv, "lmsae")) != -1) {
+    while ((opt = getopt(argc, argv, "msae")) != -1) {
         switch (opt) {
-        case 'l': mode = PRINT_MODE; break;
         case 'm': mode = MATCH_MODE; break;
         case 's': mode = SEARCH_MODE; break;
         case 'a': mode = APPEND_MODE; break;
@@ -203,77 +219,49 @@ int main(int argc, char **argv)
         }
     }
 
-    if (optind == 1) {
-        fprintf(stderr, "ERROR: missing option\n");
-        print_help();
-        exit(EXIT_FAILURE);
+    if (optind == 1 && argc == 1) {
+        print_all();
+        return 0;
     }
 
-    entry_t *entry = malloc(sizeof(entry_t));
-    if (entry == NULL) {
-        fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
-        exit(EXIT_FAILURE);
-    }
+    entry_t *entry = NULL;
     
     switch (mode) {
     case MATCH_MODE:
-        if (argc < 3) {
-            fprintf(stderr, "ERROR: missing argument\n");
-            print_help();
-            exit(EXIT_FAILURE);    
-        }
-        if (argc > 3) {
-            fprintf(stderr, "ERROR: too many arguments\n");
-            print_help();
+        check_args(argc, 3);
+        entry = get_entry(argv, optind);
+        if (entry == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
             exit(EXIT_FAILURE);
         }
-        entry = get_entry(argv, optind);
         print_matches(entry->name);
         break;
     case SEARCH_MODE:
-        if (argc < 3) {
-            fprintf(stderr, "ERROR: missing argument\n");
-            print_help();
-            exit(EXIT_FAILURE);
-        }
-        if (argc > 3) {
-            fprintf(stderr, "ERROR: too many arguments\n");
-            print_help();
-            exit(EXIT_FAILURE);
-        }
+        check_args(argc, 3);
         entry = get_entry(argv, optind);
+        if (entry == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
+            exit(EXIT_FAILURE);
+        }
         print_single_match(entry->name);
         break;
     case APPEND_MODE:
-        if (argc < 4) {
-            fprintf(stderr, "ERROR: missing argument\n");
-            print_help();
-            exit(EXIT_FAILURE);    
-        }
-        if (argc > 4) {
-            fprintf(stderr, "ERROR: too many arguments\n");
-            print_help();
+        check_args(argc, 4);
+        entry = get_entry(argv, optind);
+        if (entry == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
             exit(EXIT_FAILURE);
         }
-        entry = get_entry(argv, optind);
         append_entry(entry);
         break;
     case EDIT_MODE:
-        if (argc < 4) {
-            fprintf(stderr, "ERROR: missing argument\n");
-            print_help();
-            exit(EXIT_FAILURE);    
-        }
-        if (argc > 4) {
-            fprintf(stderr, "ERROR: too many arguments\n");
-            print_help();
+        check_args(argc, 4);
+        entry = get_entry(argv, optind);
+        if (entry == NULL) {
+            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
             exit(EXIT_FAILURE);
         }
-        entry = get_entry(argv, optind);
         edit_entry(entry);
-        break;
-    case PRINT_MODE:
-        print_all();
         break;
     default:
         print_help();

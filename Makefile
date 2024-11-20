@@ -17,7 +17,7 @@ myal: $(SRCDIR)/main.c
 	$(CC) $(CFLAGS) $(SRCDIR)/main.c -o myal
 
 install:
-	$(INSTALL_PROGRAM) mvis $(PREFIX)$(BINDIR)/myal
+	$(INSTALL_PROGRAM) myal $(PREFIX)$(BINDIR)/myal
 
 clean:
 	$(RM) myal

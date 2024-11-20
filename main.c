@@ -76,15 +76,14 @@ void print_matches(const char *sel)
     while (fgets(line, sizeof(line), fp)) {
         char *tmp = strdup(line);
         char *name = getfield(tmp, 1);
-        free(tmp);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
-        free(tmp);
 
         if (strcasestr(name, sel) != NULL) {
             printf("Name: %s Episode: %s", name, episode);
             entry_found = 1;
         }
+        free(tmp);
     }
     if (!entry_found) {
         printf("Entry not found\n");
@@ -106,15 +105,14 @@ void print_single_match(const char *sel)
     while (fgets(line, sizeof(line), fp)) {
         char *tmp = strdup(line);
         char *name = getfield(tmp, 1);
-        free(tmp);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
-        free(tmp);
 
         if (strncasecmp(name, sel, strlen(sel)) == 0) {
             printf("Name: %s Episode: %s", name, episode);
             entry_found = 1;
         }
+        free(tmp);
     }
     if (!entry_found) {
         printf("Entry not found\n");
@@ -168,10 +166,8 @@ void edit_entry(const entry_t *entry)
     while (fgets(line, sizeof(line), fp_old)) {
         char *tmp = strdup(line);
         char *old_name = getfield(tmp, 1);
-        free(tmp);
         tmp = strdup(line);
         char *old_ep = getfield(tmp, 2);
-        free(tmp);
         
         if (strncasecmp(old_name, entry->name, strlen(entry->name)) == 0) {
             fprintf(fp_new, "%s,%s\n", old_name, entry->episode);
@@ -179,6 +175,7 @@ void edit_entry(const entry_t *entry)
         } else {
             fprintf(fp_new, "%s,%s", old_name, old_ep);
         }
+        free(tmp);
     }
     if (!entry_found) {
         printf("Entry not found\n");

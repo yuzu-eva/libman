@@ -190,12 +190,6 @@ int main(int argc, char **argv)
 {
     mode_e mode;
     int opt;
-    entry_t *entry = malloc(sizeof(entry_t));
-    if (entry == NULL) {
-        fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
-        exit(EXIT_FAILURE);
-    }
-
     while ((opt = getopt(argc, argv, "lmsae")) != -1) {
         switch (opt) {
         case 'l': mode = PRINT_MODE; break;
@@ -209,47 +203,73 @@ int main(int argc, char **argv)
         }
     }
 
-    // absolutely horrible, but too tired to improve it now
-    // will do it tomorrow
-    if (
-    ((mode == MATCH_MODE || mode == SEARCH_MODE) && argc < 3)
-    || ((mode == APPEND_MODE || mode == EDIT_MODE) && argc < 4)
-    ) {
-        fprintf(stderr, "ERROR: missing argument\n");
-        print_help();
-        exit(EXIT_FAILURE);
-    }
-    
-    if (
-    ((mode == MATCH_MODE || mode == SEARCH_MODE) && argc > 3)
-    || ((mode == APPEND_MODE || mode == EDIT_MODE) && argc > 4)
-    ) {
-        fprintf(stderr, "ERROR: too many arguments\n");
-        print_help();
-        exit(EXIT_FAILURE);
-    }
-
     if (optind == 1) {
         fprintf(stderr, "ERROR: missing option\n");
         print_help();
         exit(EXIT_FAILURE);
     }
 
-    if (mode != PRINT_MODE){
-        entry = get_entry(argv, optind);
+    entry_t *entry = malloc(sizeof(entry_t));
+    if (entry == NULL) {
+        fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
+        exit(EXIT_FAILURE);
     }
     
     switch (mode) {
     case MATCH_MODE:
+        if (argc < 3) {
+            fprintf(stderr, "ERROR: missing argument\n");
+            print_help();
+            exit(EXIT_FAILURE);    
+        }
+        if (argc > 3) {
+            fprintf(stderr, "ERROR: too many arguments\n");
+            print_help();
+            exit(EXIT_FAILURE);
+        }
+        entry = get_entry(argv, optind);
         print_matches(entry->name);
         break;
     case SEARCH_MODE:
+        if (argc < 3) {
+            fprintf(stderr, "ERROR: missing argument\n");
+            print_help();
+            exit(EXIT_FAILURE);
+        }
+        if (argc > 3) {
+            fprintf(stderr, "ERROR: too many arguments\n");
+            print_help();
+            exit(EXIT_FAILURE);
+        }
+        entry = get_entry(argv, optind);
         print_single_match(entry->name);
         break;
     case APPEND_MODE:
+        if (argc < 4) {
+            fprintf(stderr, "ERROR: missing argument\n");
+            print_help();
+            exit(EXIT_FAILURE);    
+        }
+        if (argc > 4) {
+            fprintf(stderr, "ERROR: too many arguments\n");
+            print_help();
+            exit(EXIT_FAILURE);
+        }
+        entry = get_entry(argv, optind);
         append_entry(entry);
         break;
     case EDIT_MODE:
+        if (argc < 4) {
+            fprintf(stderr, "ERROR: missing argument\n");
+            print_help();
+            exit(EXIT_FAILURE);    
+        }
+        if (argc > 4) {
+            fprintf(stderr, "ERROR: too many arguments\n");
+            print_help();
+            exit(EXIT_FAILURE);
+        }
+        entry = get_entry(argv, optind);
         edit_entry(entry);
         break;
     case PRINT_MODE:

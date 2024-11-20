@@ -21,7 +21,7 @@ typedef enum {
 void print_help()
 {
     printf("usage: myal [-s <name>] [-ae <name> <episode>]                   \n");
-    printf(" Prints all entries by default                                   \n");
+    printf(" -l                 Prints all entries                           \n");
     printf(" -m <name>          Prints all anime containing the given string \n");
     printf(" -s <name>          Search for a specific anime by name          \n");
     printf(" -a <name> <number> Append new anime and episode to file         \n");
@@ -71,6 +71,7 @@ void print_matches(const char *sel)
         exit(EXIT_FAILURE);
     }
 
+    int entry_found = 0;
     char line[100];
     while (fgets(line, sizeof(line), fp)) {
         char *tmp = strdup(line);
@@ -80,14 +81,18 @@ void print_matches(const char *sel)
 
         if (strcasestr(name, sel) != NULL) {
             printf("Name: %s Episode: %s", name, episode);
+            entry_found = 1;
         }
         free(tmp);
+    }
+    if (!entry_found) {
+        printf("Entry not found\n");
     }
     fclose(fp);
 }
 
-// return one single entry matching the search string from the first character
-entry_t *get_entry(const char *sel)
+// print exactly one entry, comparing from the first character
+void print_single_match(const char *sel)
 {
     FILE *fp = fopen(filename, "r");
     if (fp == NULL) {
@@ -95,7 +100,7 @@ entry_t *get_entry(const char *sel)
         exit(EXIT_FAILURE);
     }
 
-    entry_t *res = malloc(sizeof(entry_t));
+    int entry_found = 0;
     char line[100];
     while (fgets(line, sizeof(line), fp)) {
         char *tmp = strdup(line);
@@ -104,18 +109,38 @@ entry_t *get_entry(const char *sel)
         char *episode = getfield(tmp, 2);
 
         if (strncasecmp(name, sel, strlen(sel)) == 0) {
-            strcpy(res->name, name);
-            strcpy(res->episode, episode);
-            break;
+            printf("Name: %s Episode: %s", name, episode);
+            entry_found = 1;
         }
         free(tmp);
     }
+    if (!entry_found) {
+        printf("Entry not found\n");
+    }
     fclose(fp);
+}
+
+// construct an entry from the give command line arguments
+entry_t *get_entry(char **argv, int pos)
+{
+    entry_t *res = malloc(sizeof(entry_t));
+    if (res == NULL) {
+        fprintf(stderr, "ERROR: allocation failed\n");
+        exit(EXIT_FAILURE);
+    }
+    
+    strncpy(res->name, argv[pos], sizeof(res->name) - 1);
+    res->name[sizeof(res->name) - 1] = '\0';
+    if (argv[pos + 1]) {
+        strncpy(res->episode, argv[pos + 1], sizeof(res->episode) - 1);
+    }
+    res->episode[sizeof(res->episode) - 1] = '\0';
+
     return res;
 }
 
 // append new entry to the end of the csv
-void append_entry(const char *name, const char *ep)
+void append_entry(const entry_t *entry)
 {
     FILE *fp = fopen(filename, "a");
     if (fp == NULL) {
@@ -123,14 +148,11 @@ void append_entry(const char *name, const char *ep)
         exit(EXIT_FAILURE);
     }
 
-    entry_t *entry = malloc(sizeof(entry_t));
-    strncpy(entry->name, name, sizeof(entry->name));
-    strncpy(entry->episode, ep, sizeof(entry->episode));
     fprintf(fp, "%s,%s\n", entry->name, entry->episode);
 }
 
 // edit the episode number of an anime
-void edit_entry(const char *name, const char *new_ep)
+void edit_entry(const entry_t *entry)
 {
     FILE *fp_old = fopen(filename, "r");
     FILE *fp_new = fopen("temp.csv", "w");
@@ -139,6 +161,7 @@ void edit_entry(const char *name, const char *new_ep)
         exit(EXIT_FAILURE);
     }
 
+    int entry_found = 0;
     char line[100];
     while (fgets(line, sizeof(line), fp_old)) {
         char *tmp = strdup(line);
@@ -146,12 +169,16 @@ void edit_entry(const char *name, const char *new_ep)
         tmp = strdup(line);
         char *old_ep = getfield(tmp, 2);
         
-        if (strcasestr(old_name, name) != NULL) {
-            fprintf(fp_new, "%s,%s\n", old_name, new_ep);
+        if (strncasecmp(old_name, entry->name, strlen(entry->name)) == 0) {
+            fprintf(fp_new, "%s,%s\n", old_name, entry->episode);
+            entry_found = 1;
         } else {
             fprintf(fp_new, "%s,%s", old_name, old_ep);
         }
         free(tmp);
+    }
+    if (!entry_found) {
+        printf("Entry not found\n");
     }
     remove(filename);
     rename("temp.csv", filename);
@@ -161,11 +188,17 @@ void edit_entry(const char *name, const char *new_ep)
 
 int main(int argc, char **argv)
 {
-    mode_e mode = PRINT_MODE;
+    mode_e mode;
     int opt;
-    entry_t *entry;
-    while ((opt = getopt(argc, argv, "msae")) != -1) {
+    entry_t *entry = malloc(sizeof(entry_t));
+    if (entry == NULL) {
+        fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
+        exit(EXIT_FAILURE);
+    }
+
+    while ((opt = getopt(argc, argv, "lmsae")) != -1) {
         switch (opt) {
+        case 'l': mode = PRINT_MODE; break;
         case 'm': mode = MATCH_MODE; break;
         case 's': mode = SEARCH_MODE; break;
         case 'a': mode = APPEND_MODE; break;
@@ -176,50 +209,48 @@ int main(int argc, char **argv)
         }
     }
 
-    if (optind >= argc && mode != PRINT_MODE) {
+    // absolutely horrible, but too tired to improve it now
+    // will do it tomorrow
+    if (
+    ((mode == MATCH_MODE || mode == SEARCH_MODE) && argc < 3)
+    || ((mode == APPEND_MODE || mode == EDIT_MODE) && argc < 4)
+    ) {
         fprintf(stderr, "ERROR: missing argument\n");
         print_help();
         exit(EXIT_FAILURE);
     }
-
-    if (optind == 1 && argc == 2) {
-        fprintf(stderr, "ERROR: no option for argument given\n");
+    
+    if (
+    ((mode == MATCH_MODE || mode == SEARCH_MODE) && argc > 3)
+    || ((mode == APPEND_MODE || mode == EDIT_MODE) && argc > 4)
+    ) {
+        fprintf(stderr, "ERROR: too many arguments\n");
         print_help();
         exit(EXIT_FAILURE);
+    }
+
+    if (optind == 1) {
+        fprintf(stderr, "ERROR: missing option\n");
+        print_help();
+        exit(EXIT_FAILURE);
+    }
+
+    if (mode != PRINT_MODE){
+        entry = get_entry(argv, optind);
     }
     
     switch (mode) {
     case MATCH_MODE:
-        print_matches(argv[optind]);
+        print_matches(entry->name);
         break;
     case SEARCH_MODE:
-        // maybe useful for sanitizing input, but not needed for now
-        // 
-        // size_t buffer_size = strlen(argv[optind]) + 1;
-        // char *selection = (char*)malloc(buffer_size);
-
-        // if (selection == NULL) {
-        //     fprintf(stderr, "ERROR: failed to allocate memory for buffer\n");
-        //     exit(EXIT_FAILURE);
-        // }
-
-        // strncpy(selection, argv[optind], buffer_size - 1);
-        // selection[buffer_size - 1] = '\0';
-        // [...]
-        // free(selection);
-
-        entry = get_entry(argv[optind]);
-        if (entry->name[0] == '\0') {
-            printf("Entry not found\n");
-            break;
-        }
-        printf("Name: %s Episode: %s", entry->name, entry->episode);
+        print_single_match(entry->name);
         break;
     case APPEND_MODE:
-        append_entry(argv[optind], argv[optind+1]);
+        append_entry(entry);
         break;
     case EDIT_MODE:
-        edit_entry(argv[optind], argv[optind+1]);
+        edit_entry(entry);
         break;
     case PRINT_MODE:
         print_all();
@@ -228,5 +259,6 @@ int main(int argc, char **argv)
         print_help();
         break;
     }
+    free(entry);
     return 0;
 }

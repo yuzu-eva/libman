@@ -26,7 +26,7 @@ and so on. The episode is actually stored as a string, so you can put "done" or
 "abandoned" or anything else you want in there. The string allows for a maximum
 length of 11.  
 
-You need to set the filepath to you csv in the main.c, but everything else
+You need to set the filepath to your csv in the main.c, but everything else
 should work out of the box.  
 The Makefile uses clang, but you can change it to gcc in the second line. Or
 you could simply do

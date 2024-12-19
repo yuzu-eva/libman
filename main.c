@@ -26,6 +26,7 @@ void print_help()
     printf(" -s <name>          Search for a specific anime by name          \n");
     printf(" -a <name> <number> Append new anime and episode to file         \n");
     printf(" -e <name> <number> Edit the episode number of an anime          \n");
+    printf(" -h                 Print this help menu                         \n");
     printf("\n");
 }
 
@@ -204,12 +205,13 @@ int main(int argc, char **argv)
 {
     mode_e mode;
     int opt;
-    while ((opt = getopt(argc, argv, "msae")) != -1) {
+    while ((opt = getopt(argc, argv, "msaeh")) != -1) {
         switch (opt) {
         case 'm': mode = MATCH_MODE; break;
         case 's': mode = SEARCH_MODE; break;
         case 'a': mode = APPEND_MODE; break;
         case 'e': mode = EDIT_MODE; break;
+        case 'h': print_help(); exit(EXIT_SUCCESS);
         default:
             print_help();
             exit(EXIT_FAILURE);

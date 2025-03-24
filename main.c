@@ -123,6 +123,7 @@ void print_single_match(const char *sel)
         if (strncasecmp(name, sel, strlen(sel)) == 0) {
             printf("Name: %s, Episode: %s, Status: %s", name, episode, status);
             entry_found = 1;
+            break;
         }
         free(tmp);
     }
@@ -165,6 +166,7 @@ void append_entry(const entry_t *entry)
     }
 
     fprintf(fp, "%s,%s,%s\n", entry->name, entry->episode, entry->status);
+    fclose(fp);
 }
 
 // edit the episode number of an anime

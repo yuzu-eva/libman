@@ -141,7 +141,7 @@ entry_t *get_entry(char **argv, int pos)
         fprintf(stderr, "ERROR: allocation failed\n");
         exit(EXIT_FAILURE);
     }
-    
+
     strncpy(res->name, argv[pos], sizeof(res->name) - 1);
     res->name[sizeof(res->name) - 1] = '\0';
     if (argv[pos + 1]) {
@@ -188,7 +188,7 @@ void edit_entry(const entry_t *entry)
         char *old_ep = getfield(tmp, 2);
         tmp = strdup(line);
         char *old_status = getfield(tmp, 3);
-        
+
         if (strncasecmp(old_name, entry->name, strlen(entry->name)) == 0) {
             fprintf(fp_new, "%s,%s,%s\n", old_name, entry->episode, entry->status);
             entry_found = 1;
@@ -242,7 +242,7 @@ int main(int argc, char **argv)
     }
 
     entry_t *entry = NULL;
-    
+
     switch (mode) {
     case MATCH_MODE:
         check_args(argc, 3);

@@ -14,23 +14,20 @@ unsafe code feel free to point it out and roast me.
 
 This cli-tool works with csv files in the format
 
-name,episode  
+name,episode,status  
 
 For example:
 
-Samurai Champloo,14  
-Bakemonogatari,done  
-Steins; Gate,1  
+Samurai Champloo,14,watching  
+Bakemonogatari,0,done  
+Steins; Gate,1,watching  
 
-and so on. The episode is actually stored as a string, so you can put "done" or
-"abandoned" or anything else you want in there. The string allows for a maximum
-length of 11.  
+and so on. If I'm done watching a series, the episode is set to '0'.  
 
 You need to set the filepath to your csv in the main.c, but everything else
 should work out of the box.  
-The Makefile uses clang, but you can change it to gcc in the second line. Or
-you could simply do
-
+The Makefile uses clang, because that's what I prefer, but you can change it
+to gcc in the second line. Or you could simply do  
 ```
 gcc -o myal main.c
 ```

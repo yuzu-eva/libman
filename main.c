@@ -7,7 +7,8 @@ const char *filename = "./anime.csv";
 
 typedef struct {
     char name[80];
-    char episode[12];
+    char episode[5];
+    char status[10];
 } entry_t;
 
 typedef enum {
@@ -56,8 +57,14 @@ void print_all()
         char *name = getfield(tmp, 1);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
+        tmp = strdup(line);
+        char *status = getfield(tmp, 3);
 
-        printf("Name: %s Episode: %s", name, episode);
+        if (!strcmp(episode, "0")) {
+            printf("Name: %s, Status: %s", name, status);
+        } else {
+            printf("Name: %s, Episode: %s\n", name, episode);
+        }
         free(tmp);
     }
     fclose(fp);
@@ -79,9 +86,11 @@ void print_matches(const char *sel)
         char *name = getfield(tmp, 1);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
+        tmp = strdup(line);
+        char *status = getfield(tmp, 3);
 
         if (strcasestr(name, sel) != NULL) {
-            printf("Name: %s Episode: %s", name, episode);
+            printf("Name: %s, Episode: %s, Status: %s", name, episode, status);
             entry_found = 1;
         }
         free(tmp);
@@ -108,9 +117,11 @@ void print_single_match(const char *sel)
         char *name = getfield(tmp, 1);
         tmp = strdup(line);
         char *episode = getfield(tmp, 2);
+        tmp = strdup(line);
+        char *status = getfield(tmp, 3);
 
         if (strncasecmp(name, sel, strlen(sel)) == 0) {
-            printf("Name: %s Episode: %s", name, episode);
+            printf("Name: %s, Episode: %s, Status: %s", name, episode, status);
             entry_found = 1;
         }
         free(tmp);
@@ -136,6 +147,10 @@ entry_t *get_entry(char **argv, int pos)
         strncpy(res->episode, argv[pos + 1], sizeof(res->episode) - 1);
     }
     res->episode[sizeof(res->episode) - 1] = '\0';
+    if (argv[pos + 2]) {
+        strncpy(res->status, argv[pos + 2], sizeof(res->status) - 1);
+    }
+    res->status[sizeof(res->status) - 1] = '\0';
 
     return res;
 }
@@ -149,7 +164,7 @@ void append_entry(const entry_t *entry)
         exit(EXIT_FAILURE);
     }
 
-    fprintf(fp, "%s,%s\n", entry->name, entry->episode);
+    fprintf(fp, "%s,%s,%s\n", entry->name, entry->episode, entry->status);
 }
 
 // edit the episode number of an anime
@@ -169,12 +184,14 @@ void edit_entry(const entry_t *entry)
         char *old_name = getfield(tmp, 1);
         tmp = strdup(line);
         char *old_ep = getfield(tmp, 2);
+        tmp = strdup(line);
+        char *old_status = getfield(tmp, 3);
         
         if (strncasecmp(old_name, entry->name, strlen(entry->name)) == 0) {
-            fprintf(fp_new, "%s,%s\n", old_name, entry->episode);
+            fprintf(fp_new, "%s,%s,%s\n", old_name, entry->episode, entry->status);
             entry_found = 1;
         } else {
-            fprintf(fp_new, "%s,%s", old_name, old_ep);
+            fprintf(fp_new, "%s,%s,%s", old_name, old_ep, old_status);
         }
         free(tmp);
     }
@@ -199,7 +216,6 @@ void check_args(int argc, int expected_count) {
         exit(EXIT_FAILURE);
     }
 }
-
 
 int main(int argc, char **argv)
 {
@@ -245,7 +261,7 @@ int main(int argc, char **argv)
         print_single_match(entry->name);
         break;
     case APPEND_MODE:
-        check_args(argc, 4);
+        check_args(argc, 5);
         entry = get_entry(argv, optind);
         if (entry == NULL) {
             fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
@@ -254,7 +270,7 @@ int main(int argc, char **argv)
         append_entry(entry);
         break;
     case EDIT_MODE:
-        check_args(argc, 4);
+        check_args(argc, 5);
         entry = get_entry(argv, optind);
         if (entry == NULL) {
             fprintf(stderr, "ERROR: failed to allocate memory for entry\n");

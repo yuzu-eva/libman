@@ -7,7 +7,7 @@ const char *filename = "./anime.csv";
 
 typedef struct {
     char name[80];
-    char episode[5];
+    char episode[8];
     char status[10];
 } entry_t;
 

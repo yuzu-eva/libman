@@ -1,5 +1,5 @@
 SHELL=/bin/sh
-CC=clang
+CC=gcc
 
 SRCDIR=.
 PREFIX=/usr/local
@@ -8,7 +8,7 @@ BINDIR=/bin
 INSTALL_PROGRAM=install
 INSTALL_DATA=install -m 644
 
-CFLAGS=-Wall -Wextra -O3 -ggdb
+CFLAGS=-Wall -Wextra
 LIBS=-lsqlite3
 BIN=myal
 

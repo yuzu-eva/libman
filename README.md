@@ -13,7 +13,7 @@ unsafe code feel free to point it out and roast me.
 You need a database with tables `anime` and `manga`. Attached in this repo
 is a setup script for the database. Simply execute
 ```
-sqlite3 <db-setup.sql
+sqlite3 library.db <db-setup.sql
 ```
 
 This will create the following tables:  

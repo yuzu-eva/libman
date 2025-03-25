@@ -2,15 +2,11 @@
 
 ## Overview
 
-My Anime Library is a cli-tool written in C to manage an anime and manga list.  
+My Anime Library is a CLI-Tool to manage an anime and manga list.  
 I used to track which anime I have watched and what episode I'm on by writing in
 a text file, which got annoying after a while.  
 This is why I created this tool to keep anime and manga organized in a sqlite3
 database.  
-
-Is it a complete overkill to write this in C? Yes  
-But why not? I wanted some practice with C, so if you see any glaring errors or
-unsafe code feel free to point it out and roast me.  
 
 ## Quickstart
 
@@ -39,10 +35,9 @@ gcc -o myal main.c -lsqlite3
 
 ## Usage
 
-Currently there are 4 modes:
-- get, which retrieves an anime or manga by the given name argument
-- set, which updates the episode or chapter of a given entry
-- status, which updates the status of a given entry
+Currently there are 3 modes:
+- get, which retrieves one or more anime or manga by the given name argument
+- set, which updates the episode or chapter and/or the status of a given entry
 - add, which adds a new entry to a given table
 
 Here are examples for each mode:
@@ -50,22 +45,13 @@ Here are examples for each mode:
 ```
 myal get anime jojo
 ```
-Assuming the database contains "JoJo's Bizarre Adventure" and "JoJo's Bizarre
-Adventure - Stardust Crusaders", both will be retrieved.  
 
 ```
 myal set manga "Nikubami Honegishimi" 3
+myal set anime "Lucky Star" done
+myal set anime "Durarara!!" 13 "watching"
 ```
-This will set the chapter of the entry "Nikubami Honegishimi" to 3. The qoutes
-are needed because of the whitespace in the name.  
-
-```
-myal status anime Jigokuraku done
-```
-This will set the status of the entry "Jigokuraku" to "done".  
 
 ```
 myal add anime "Detective Conan" 1 "not started"
 ```
-This will add the entry "Detective Conan" with the episode 1 set to the status
-"not started" to the anime table.  

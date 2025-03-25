@@ -1,4 +1,4 @@
 *.csv
 *.db
+old_main.c
 myal
-*test*

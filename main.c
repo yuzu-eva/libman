@@ -2,288 +2,212 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sqlite3.h>
 
-const char *filename = "./anime.csv";
+const char *filename = "./library.db";
 
-typedef struct {
-    char name[80];
-    char episode[8];
-    char status[10];
-} entry_t;
-
-typedef enum {
-    MATCH_MODE,
-    SEARCH_MODE,
-    APPEND_MODE,
-    EDIT_MODE,
-} mode_e;
-
-void print_help()
+static int callback(void *NotUsed, int argc, char **argv, char **azColName)
 {
-    printf("usage: myal [-s <name>] [-ae <name> <episode>]                   \n");
-    printf(" Prints all entries by default                                   \n");
-    printf("\n");
-    printf(" -m <name>          Prints all anime containing the given string \n");
-    printf(" -s <name>          Search for a specific anime by name          \n");
-    printf(" -a <name> <number> Append new anime and episode to file         \n");
-    printf(" -e <name> <number> Edit the episode number of an anime          \n");
-    printf(" -h                 Print this help menu                         \n");
-    printf("\n");
+   int i;
+   for(i = 0; i < argc; i++) {
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   }
+   printf("\n");
+   return 0;
 }
 
-char *getfield(char *line, int num)
+void exit_with_error(sqlite3 *db, const char *msg)
 {
-    char *tok;
-    for (tok = strtok(line, ","); tok && *tok; tok = strtok(NULL, ",")) {
-        if (!--num) {
-            return tok;
-        }
-    }
-    return NULL;
+    fprintf(stderr, "%s: %s\n", msg, sqlite3_errmsg(db));
+    sqlite3_close(db);
+    exit(69);
 }
 
-// print everything
-void print_all()
+void select_from_table(sqlite3 *db, char *table_name, char *q_param)
 {
-    FILE *fp = fopen(filename, "r");
-    if (fp == NULL) {
-        fprintf(stderr, "ERROR: no such file\n");
-        exit(EXIT_FAILURE);
+    char *zErrMsg = 0;
+    char *sql;
+    int rc;
+
+    const unsigned char *name, *episode, *status;
+    char *type;
+
+    if (!strcmp(table_name, "anime")) {
+        strcpy(type, "Episode");
+        sql = "SELECT NAME, EPISODE, STATUS FROM anime WHERE NAME LIKE ?1 ORDER BY ID;";
+    } else if (!strcmp(table_name, "manga")) {
+        strcpy(type, "Chapter");
+        sql = "SELECT NAME, CHAPTER, STATUS FROM manga WHERE NAME LIKE ?1 ORDER BY ID;";
+    } else {
+        fprintf(stderr, "table does not exist...\n");
+        sqlite3_close(db);
+        exit(69);
     }
 
-    char line[100];
-    while (fgets(line, sizeof(line), fp)) {
-        char *tmp = strdup(line);
-        char *name = getfield(tmp, 1);
-        tmp = strdup(line);
-        char *episode = getfield(tmp, 2);
-        tmp = strdup(line);
-        char *status = getfield(tmp, 3);
+    sqlite3_stmt *stmt;
+    sprintf(q_param, "%s%%", q_param);
 
-        if (!strcmp(episode, "0")) {
-            printf("Name: %s, Status: %s", name, status);
-        } else {
-            printf("Name: %s, Episode: %s\n", name, episode);
-        }
-        free(tmp);
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        exit_with_error(db, "failure fetching data: ");
     }
-    fclose(fp);
+
+    sqlite3_bind_text(stmt, 1, q_param, -1, SQLITE_STATIC);
+
+    while(sqlite3_step(stmt) == SQLITE_ROW) {
+        name = sqlite3_column_text(stmt, 0);
+        episode = sqlite3_column_text(stmt, 1);
+        status = sqlite3_column_text(stmt, 2);
+        printf("%s, %s %s, %s\n", name, type, episode, status);
+    }
+
+    sqlite3_finalize(stmt);
 }
 
-// print any entry containing the search string
-void print_matches(const char *sel)
+void update_ep(sqlite3 *db, char *table_name, char *q_param, char *value)
 {
-    FILE *fp = fopen(filename, "r");
-    if (fp == NULL) {
-        fprintf(stderr, "ERROR: no such file\n");
-        exit(EXIT_FAILURE);
+    char *zErrMsg = 0;
+    char *sql;
+    int rc;
+
+    sqlite3_stmt *stmt;
+
+    if (!strcmp(table_name, "anime")) {
+        sql = "UPDATE anime SET EPISODE=?1 WHERE NAME=?2;";
+    } else if (!strcmp(table_name, "manga")) {
+        sql = "UPDATE manga SET CHAPTER=?1 WHERE NAME=?2;";
+    } else {
+        fprintf(stderr, "table does not exist...\n");
+        sqlite3_close(db);
+        exit(69);
     }
 
-    int entry_found = 0;
-    char line[100];
-    while (fgets(line, sizeof(line), fp)) {
-        char *tmp = strdup(line);
-        char *name = getfield(tmp, 1);
-        tmp = strdup(line);
-        char *episode = getfield(tmp, 2);
-        tmp = strdup(line);
-        char *status = getfield(tmp, 3);
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        exit_with_error(db, "failure fetching data: ");
+    }
 
-        if (strcasestr(name, sel) != NULL) {
-            printf("Name: %s, Episode: %s, Status: %s", name, episode, status);
-            entry_found = 1;
-        }
-        free(tmp);
-    }
-    if (!entry_found) {
-        printf("Entry not found\n");
-    }
-    fclose(fp);
+    sqlite3_bind_text(stmt, 1, value, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, q_param, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
 
-// print exactly one entry, comparing from the first character
-void print_single_match(const char *sel)
+void update_status(sqlite3 *db, char *table_name, char *q_param, char *value)
 {
-    FILE *fp = fopen(filename, "r");
-    if (fp == NULL) {
-        fprintf(stderr, "ERROR: no such file\n");
-        exit(EXIT_FAILURE);
+    char *zErrMsg = 0;
+    char *sql;
+    int rc;
+
+    sqlite3_stmt *stmt;
+
+    if (!strcmp(table_name, "anime")) {
+        sql = "UPDATE anime SET STATUS=?1 WHERE NAME=?2;";
+    } else if (!strcmp(table_name, "manga")) {
+        sql = "UPDATE manga SET STATUS=?1 WHERE NAME=?2;";
+    } else {
+        fprintf(stderr, "table does not exist...\n");
+        sqlite3_close(db);
+        exit(69);
     }
 
-    int entry_found = 0;
-    char line[100];
-    while (fgets(line, sizeof(line), fp)) {
-        char *tmp = strdup(line);
-        char *name = getfield(tmp, 1);
-        tmp = strdup(line);
-        char *episode = getfield(tmp, 2);
-        tmp = strdup(line);
-        char *status = getfield(tmp, 3);
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        exit_with_error(db, "failure fetching data: ");
+    }
 
-        if (strncasecmp(name, sel, strlen(sel)) == 0) {
-            printf("Name: %s, Episode: %s, Status: %s", name, episode, status);
-            entry_found = 1;
-            break;
-        }
-        free(tmp);
-    }
-    if (!entry_found) {
-        printf("Entry not found\n");
-    }
-    fclose(fp);
+    sqlite3_bind_text(stmt, 1, value, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, q_param, -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
 
-// construct an entry from the give command line arguments
-entry_t *get_entry(char **argv, int pos)
+void add_entry(sqlite3 *db, char *table_name, char *name, char *episode, char *status)
 {
-    entry_t *res = malloc(sizeof(entry_t));
-    if (res == NULL) {
-        fprintf(stderr, "ERROR: allocation failed\n");
-        exit(EXIT_FAILURE);
+    char *zErrMsg = 0;
+    char *sql;
+    int rc;
+
+    sqlite3_stmt *stmt;
+
+    if (!strcmp(table_name, "anime")) {
+        sql = "INSERT INTO anime (NAME, EPISODE, STATUS) VALUES (?1, ?2, ?3);";
+    } else if (!strcmp(table_name, "manga")) {
+        sql = "INSERT INTO manga (NAME, CHAPTER, STATUS) VALUES (?1, ?2, ?3);";
+    } else {
+        fprintf(stderr, "table does not exist...\n");
+        sqlite3_close(db);
+        exit(69);
     }
 
-    strncpy(res->name, argv[pos], sizeof(res->name) - 1);
-    res->name[sizeof(res->name) - 1] = '\0';
-    if (argv[pos + 1]) {
-        strncpy(res->episode, argv[pos + 1], sizeof(res->episode) - 1);
-    }
-    res->episode[sizeof(res->episode) - 1] = '\0';
-    if (argv[pos + 2]) {
-        strncpy(res->status, argv[pos + 2], sizeof(res->status) - 1);
-    }
-    res->status[sizeof(res->status) - 1] = '\0';
-
-    return res;
-}
-
-// append new entry to the end of the csv
-void append_entry(const entry_t *entry)
-{
-    FILE *fp = fopen(filename, "a");
-    if (fp == NULL) {
-        fprintf(stderr, "ERROR: no such file\n");
-        exit(EXIT_FAILURE);
+    rc = sqlite3_prepare_v2(db, sql, -1, &stmt, 0);
+    if (rc != SQLITE_OK) {
+        exit_with_error(db, "failure fetching data: ");
     }
 
-    fprintf(fp, "%s,%s,%s\n", entry->name, entry->episode, entry->status);
-    fclose(fp);
-}
+    sqlite3_bind_text(stmt, 1, name, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, episode, -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, status, -1, SQLITE_STATIC);
 
-// edit the episode number of an anime
-void edit_entry(const entry_t *entry)
-{
-    FILE *fp_old = fopen(filename, "r");
-    FILE *fp_new = fopen("temp.csv", "w");
-    if (fp_old == NULL || fp_new == NULL) {
-        fprintf(stderr, "ERROR: no such file\n");
-        exit(EXIT_FAILURE);
-    }
-
-    int entry_found = 0;
-    char line[100];
-    while (fgets(line, sizeof(line), fp_old)) {
-        char *tmp = strdup(line);
-        char *old_name = getfield(tmp, 1);
-        tmp = strdup(line);
-        char *old_ep = getfield(tmp, 2);
-        tmp = strdup(line);
-        char *old_status = getfield(tmp, 3);
-
-        if (strncasecmp(old_name, entry->name, strlen(entry->name)) == 0) {
-            fprintf(fp_new, "%s,%s,%s\n", old_name, entry->episode, entry->status);
-            entry_found = 1;
-        } else {
-            fprintf(fp_new, "%s,%s,%s", old_name, old_ep, old_status);
-        }
-        free(tmp);
-    }
-    if (!entry_found) {
-        printf("Entry not found\n");
-    }
-    fclose(fp_old);
-    fclose(fp_new);
-    remove(filename);
-    rename("temp.csv", filename);
-}
-
-void check_args(int argc, int expected_count) {
-    if (argc < expected_count) {
-        fprintf(stderr, "ERROR: missing argument\n");
-        print_help();
-        exit(EXIT_FAILURE);
-    }
-    if (argc > expected_count) {
-        fprintf(stderr, "ERROR: too many arguments\n");
-        print_help();
-        exit(EXIT_FAILURE);
-    }
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
 }
 
 int main(int argc, char **argv)
 {
-    mode_e mode;
-    int opt;
-    while ((opt = getopt(argc, argv, "msaeh")) != -1) {
-        switch (opt) {
-        case 'm': mode = MATCH_MODE; break;
-        case 's': mode = SEARCH_MODE; break;
-        case 'a': mode = APPEND_MODE; break;
-        case 'e': mode = EDIT_MODE; break;
-        case 'h': print_help(); exit(EXIT_SUCCESS);
-        default:
-            print_help();
-            exit(EXIT_FAILURE);
-        }
+    if (argc < 4) {
+        fprintf(stderr, "missing argument...\n");
+        exit(69);
+    }
+    char *mode, *target, *name, *episode, *status;
+    mode = argv[1];
+    target = argv[2];
+    name = argv[3];
+
+    sqlite3 *db;
+    int rc;
+
+    rc = sqlite3_open(filename, &db);
+
+    if (rc) {
+        exit_with_error(db, "Can't open database: ");
     }
 
-    if (optind == 1 && argc == 1) {
-        print_all();
-        return 0;
+    if (!strcmp(mode, "get")) {
+        select_from_table(db, target, name);
+    } else if (!strcmp(mode, "set")) {
+        if (argc < 5) {
+            fprintf(stderr, "missing argument...\n");
+            sqlite3_close(db);
+            exit(69);
+        }
+        episode = argv[4];
+        update_ep(db, target, name, episode);
+    } else if (!strcmp(mode, "status")) {
+        if (argc < 5) {
+            fprintf(stderr, "missing argument...\n");
+            sqlite3_close(db);
+            exit(69);
+        }
+        status = argv[4];
+        update_status(db, target, name, status);
+    } else if (!strcmp(mode, "add")) {
+        if (argc < 6) {
+            fprintf(stderr, "missing argument...\n");
+            sqlite3_close(db);
+            exit(69);
+        }
+        episode = argv[4];
+        status = argv[5];
+        add_entry(db, target, name, episode, status);
+    } else {
+        fprintf(stderr, "unknown option...\n");
+        sqlite3_close(db);
+        exit(69);
     }
 
-    entry_t *entry = NULL;
-
-    switch (mode) {
-    case MATCH_MODE:
-        check_args(argc, 3);
-        entry = get_entry(argv, optind);
-        if (entry == NULL) {
-            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
-            exit(EXIT_FAILURE);
-        }
-        print_matches(entry->name);
-        break;
-    case SEARCH_MODE:
-        check_args(argc, 3);
-        entry = get_entry(argv, optind);
-        if (entry == NULL) {
-            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
-            exit(EXIT_FAILURE);
-        }
-        print_single_match(entry->name);
-        break;
-    case APPEND_MODE:
-        check_args(argc, 5);
-        entry = get_entry(argv, optind);
-        if (entry == NULL) {
-            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
-            exit(EXIT_FAILURE);
-        }
-        append_entry(entry);
-        break;
-    case EDIT_MODE:
-        check_args(argc, 5);
-        entry = get_entry(argv, optind);
-        if (entry == NULL) {
-            fprintf(stderr, "ERROR: failed to allocate memory for entry\n");
-            exit(EXIT_FAILURE);
-        }
-        edit_entry(entry);
-        break;
-    default:
-        print_help();
-        break;
-    }
-    free(entry);
+    sqlite3_close(db);
     return 0;
 }

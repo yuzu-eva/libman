@@ -39,7 +39,7 @@ void select_from_table(sqlite3 *db, char *tblName, char *qp)
         sql = "SELECT * FROM anime WHERE NAME LIKE ?1 ORDER BY ID;";
     } else if (!strcmp(tblName, "manga")) {
         type = "Chapter";
-        sql = "SELECT * manga WHERE NAME LIKE ?1 ORDER BY ID;";
+        sql = "SELECT * FROM manga WHERE NAME LIKE ?1 ORDER BY ID;";
     } else {
         fprintf(stderr, "table does not exist...\n");
         sqlite3_close(db);

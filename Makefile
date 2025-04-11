@@ -11,27 +11,27 @@ CFLAGS = -Wall -Wextra
 LIBS = -lsqlite3
 SRC = main.c dbhandling.c
 OBJ = ${SRC:.c=.o}
-BIN = myal
+BIN = libman
 
 all: options ${BIN}
 
 options:
-	@echo myal build options:
+	@echo ${BIN} build options:
 	@echo "CFLAGS = ${CFLAGS}"
 	@echo "CC     = ${CC}"
 
 .c.o:
 	${CC} -c ${CFLAGS} ${SRC}
 
-myal: .c.o
-	${CC} ${CFLAGS} ${LIBS} ${OBJ} -o myal
+libman: .c.o
+	${CC} ${CFLAGS} ${LIBS} ${OBJ} -o ${BIN}
 
 install:
-	${INSTALL_PROGRAM} myal ${PREFIX}${BINDIR}/myal
+	${INSTALL_PROGRAM} ${BIN} ${PREFIX}${BINDIR}/${BIN}
 
 clean:
-	${RM} myal
+	${RM} ${BIN}
 	${RM} ${OBJ}
 
 uninstall:
-	${RM} /usr/local/bin/myal
+	${RM} ${PREFIX}/${BINDIR}/${BIN}

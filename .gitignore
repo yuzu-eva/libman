@@ -4,4 +4,4 @@ old_main.c
 *.db
 *.o
 
-myal
+libman

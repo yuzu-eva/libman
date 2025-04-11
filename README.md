@@ -51,7 +51,7 @@ entry
 Here are examples for each mode:
 
 ```
-myal get anime jojo
+libman get anime jojo
 ```
 
 ```

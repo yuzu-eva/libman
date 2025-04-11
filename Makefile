@@ -9,7 +9,7 @@ INSTALL_DATA = install -m 644
 
 CFLAGS = -Wall -Wextra
 LIBS = -lsqlite3
-SRC = main.c dbhandling.c
+SRC = main.c dbhandling.c enum.c
 OBJ = ${SRC:.c=.o}
 BIN = libman
 

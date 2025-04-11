@@ -1,34 +1,19 @@
 #include <stdint.h>
 
 #include "dbhandling.h"
+#include "enum.h"
 
 const uint8_t PATH_MAX = 64;
 const char *filepath = ".local/share/sqlite";
 const char *filename = "library.db";
 
-typedef enum {
-    GET,
-    SET,
-    ADD,
-} mode_e;
-
-static const struct {
-    mode_e val;
-    const char *str;
-} conversion [] = {
-    {GET, "get"},
-    {SET, "set"},
-    {ADD, "add"},
-};
-
-mode_e str2enum(const char *str)
-{
-    for (size_t i = 0; i < sizeof(conversion) / sizeof(conversion[0]); ++i) {
-        if (!strcmp(str, conversion[i].str))
-            return conversion[i].val;
-    }
-    return -1;
-}
+typedef struct {
+    target_e target;
+    char *name;
+    char *author;
+    char *value;
+    char *status;
+} entry_t;
 
 void print_help(void)
 {
@@ -43,6 +28,20 @@ void print_help(void)
     printf("\n");
 }
 
+entry_t *set_entry(entry_t *entry, int argc, char **argv)
+{
+    entry->target = str2enum_target(argv[2]);
+    entry->name = argv[3];
+    if (argc == 5) {
+        entry->value = argv[4];
+        entry->status = NULL;
+    } else if (argc == 6) {
+        entry->value = argv[4];
+        entry->status = argv[5];
+    }
+    return entry;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 4) {
@@ -52,10 +51,8 @@ int main(int argc, char **argv)
     }
 
     mode_e mode;
-    char *target, *name, *value, *status;
-    mode = str2enum(argv[1]);
-    target = argv[2];
-    name = argv[3];
+    entry_t *entry = malloc(sizeof(entry_t));
+    mode = str2enum_mode(argv[1]);
 
     char fullpath[PATH_MAX];
     snprintf(fullpath, PATH_MAX, "%s/%s/%s", getenv("HOME"), filepath, filename);
@@ -71,7 +68,8 @@ int main(int argc, char **argv)
 
     switch (mode) {
     case GET:
-        select_from_table(db, target, name);
+        set_entry(entry, argc, argv);
+        select_from_table(db, entry->target, entry->name);
         break;
     case SET:
         if (argc < 5) {
@@ -79,14 +77,8 @@ int main(int argc, char **argv)
             sqlite3_close(db);
             exit(69);
         }
-        if (argc == 5) {
-            value = argv[4];
-            update_entry(db, target, name, value, NULL);
-        } else if (argc == 6) {
-            value = argv[4];
-            status = argv[5];
-            update_entry(db, target, name, value, status);
-        }
+        set_entry(entry, argc, argv);
+        update_entry(db, entry->target, entry->name, entry->value, entry->status);
         break;
     case ADD:
         if (argc < 6) {
@@ -94,9 +86,8 @@ int main(int argc, char **argv)
             sqlite3_close(db);
             exit(69);
         }
-        value = argv[4];
-        status = argv[5];
-        add_entry(db, target, name, value, status);
+        set_entry(entry, argc, argv);
+        add_entry(db, entry->target, entry->name, entry->value, entry->status);
         break;
     default:
         fprintf(stderr, "unknown option...\n");
@@ -106,5 +97,6 @@ int main(int argc, char **argv)
     }
 
     sqlite3_close(db);
+    free(entry);
     return 0;
 }

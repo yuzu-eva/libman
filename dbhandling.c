@@ -1,4 +1,5 @@
 #include "dbhandling.h"
+#include "enum.h"
 
 void exit_with_error(sqlite3 *db, const char *msg)
 {
@@ -7,7 +8,7 @@ void exit_with_error(sqlite3 *db, const char *msg)
     exit(69);
 }
 
-void select_from_table(sqlite3 *db, char *tblName, char *qp)
+void select_from_table(sqlite3 *db, target_e target, char *qp)
 {
     char *sql;
     int rc;
@@ -18,14 +19,16 @@ void select_from_table(sqlite3 *db, char *tblName, char *qp)
     char *query_param = malloc(strlen(qp) + 2);
     int id;
 
-
-    if (!strcmp(tblName, "anime")) {
+    switch (target) {
+    case ANIME:
         type = "Episode";
         sql = "SELECT * FROM anime WHERE NAME LIKE ?1 ORDER BY ID;";
-    } else if (!strcmp(tblName, "manga")) {
+        break;
+    case MANGA:
         type = "Chapter";
         sql = "SELECT * FROM manga WHERE NAME LIKE ?1 ORDER BY ID;";
-    } else {
+        break;
+    default:
         fprintf(stderr, "table does not exist...\n");
         sqlite3_close(db);
         exit(69);
@@ -58,7 +61,7 @@ void select_from_table(sqlite3 *db, char *tblName, char *qp)
     free(query_param);
 }
 
-void update_entry(sqlite3 *db, char *tblName, char *qp, char *value, char *status)
+void update_entry(sqlite3 *db, target_e target, char *qp, char *value, char *status)
 {
     char *sql;
     int rc;
@@ -66,19 +69,22 @@ void update_entry(sqlite3 *db, char *tblName, char *qp, char *value, char *statu
 
     sqlite3_stmt *stmt;
 
-    if (!strcmp(tblName, "anime")) {
+    switch (target) {
+    case ANIME:
         if (status == NULL) {
             sql = "UPDATE anime SET EPISODE=?1 WHERE NAME=?2;";
         } else {
             sql = "UPDATE anime SET EPISODE=?1, STATUS=?2 WHERE NAME=?3;";
         }
-    } else if (!strcmp(tblName, "manga")) {
+        break;
+    case MANGA:
         if (status == NULL) {
             sql = "UPDATE manga SET CHAPTER=?1 WHERE NAME=?2;";
         } else {
             sql = "UPDATE manga SET CHAPTER=?1, STATUS=?2 WHERE NAME=?3;";
         }
-    } else {
+        break;
+    default:
         fprintf(stderr, "table does not exist...\n");
         sqlite3_close(db);
         exit(69);
@@ -106,18 +112,21 @@ void update_entry(sqlite3 *db, char *tblName, char *qp, char *value, char *statu
     sqlite3_finalize(stmt);
 }
 
-void add_entry(sqlite3 *db, char *tblName, char *name, char *value, char *status)
+void add_entry(sqlite3 *db, target_e target, char *name, char *value, char *status)
 {
     char *sql;
     int rc;
 
     sqlite3_stmt *stmt;
 
-    if (!strcmp(tblName, "anime")) {
+    switch (target) {
+    case ANIME:
         sql = "INSERT INTO anime (NAME, EPISODE, STATUS) VALUES (?1, ?2, ?3);";
-    } else if (!strcmp(tblName, "manga")) {
+        break;
+    case MANGA:
         sql = "INSERT INTO manga (NAME, CHAPTER, STATUS) VALUES (?1, ?2, ?3);";
-    } else {
+        break;
+    default:
         fprintf(stderr, "table does not exist...\n");
         sqlite3_close(db);
         exit(69);
@@ -133,6 +142,6 @@ void add_entry(sqlite3 *db, char *tblName, char *name, char *value, char *status
     sqlite3_bind_text(stmt, 3, status, -1, SQLITE_STATIC);
 
     rc = sqlite3_step(stmt);
-    printf("Entry %s added to %s!\n", name, tblName);
+    printf("Entry %s added!\n", name);
     sqlite3_finalize(stmt);
 }

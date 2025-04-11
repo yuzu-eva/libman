@@ -1,4 +1,7 @@
+src/old_main.c
+
 *.csv
 *.db
-old_main.c
+*.o
+
 myal

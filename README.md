@@ -30,7 +30,9 @@ To compile, do
 ```bash
 make
 ```
+
 &nbsp;
+
 To install it in /usr/local/bin/, do
 ```bash
 make install

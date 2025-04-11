@@ -58,7 +58,7 @@ libman get anime jojo
 
 ```
 libman set manga "Nikubami Honegishimi" 3
-libman set anime "Lucky Star" done
+libman set anime "Lucky Star" 0 done
 libman set anime "Durarara!!" 13 "watching"
 ```
 

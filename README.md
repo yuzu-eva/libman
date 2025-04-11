@@ -28,14 +28,14 @@ the status to "done".
 The database file is expected to be in "~/.local/share/sqlite/library.db".  
 To compile, do
 ```bash
-make
+$ make
 ```
 
 &nbsp;
 
 To install it in /usr/local/bin/, do
 ```bash
-make install
+# make install
 ```
 
 ## Usage

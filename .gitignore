@@ -1,4 +1,4 @@
-src/old_main.c
+old_main.c
 
 *.csv
 *.db

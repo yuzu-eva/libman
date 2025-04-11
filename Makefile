@@ -1,31 +1,37 @@
-SHELL=/bin/sh
-CC=gcc
+SHELL = /bin/sh
+CC = gcc
 
-SRCDIR=./src
-PREFIX=/usr/local
-BINDIR=/bin
+PREFIX = /usr/local
+BINDIR = /bin
 
-INSTALL_PROGRAM=install
-INSTALL_DATA=install -m 644
+INSTALL_PROGRAM = install
+INSTALL_DATA = install -m 644
 
-CFLAGS=-Wall -Wextra
-LIBS=-lsqlite3
-BIN=myal
+CFLAGS = -Wall -Wextra
+LIBS = -lsqlite3
+SRC = main.c dbhandling.c
+OBJ = ${SRC:.c=.o}
+BIN = myal
 
-all: $(BIN)
+all: options ${BIN}
 
-myal: $(SRCDIR)/main.c dbhandling
-	$(CC) $(CFLAGS) $(LIBS) $(SRCDIR)/main.c dbhandling.o -o myal
+options:
+	@echo myal build options:
+	@echo "CFLAGS = ${CFLAGS}"
+	@echo "CC     = ${CC}"
 
-dbhandling: $(SRCDIR)/dbhandling.c
-	$(CC) $(CFLAGS) $(LIBS) -c $(SRCDIR)/dbhandling.c
+.c.o:
+	${CC} -c ${CFLAGS} ${SRC}
+
+myal: .c.o
+	${CC} ${CFLAGS} ${LIBS} ${OBJ} -o myal
 
 install:
-	$(INSTALL_PROGRAM) myal $(PREFIX)$(BINDIR)/myal
+	${INSTALL_PROGRAM} myal ${PREFIX}${BINDIR}/myal
 
 clean:
-	$(RM) myal
-	$(RM) dbhandling.o
+	${RM} myal
+	${RM} ${OBJ}
 
 uninstall:
-	$(RM) /usr/local/bin/myal
+	${RM} /usr/local/bin/myal

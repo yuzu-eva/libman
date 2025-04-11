@@ -3,8 +3,12 @@
 #include <string.h>
 #include <unistd.h>
 #include <sqlite3.h>
+#include <stdint.h>
 
-const char *filename = "./library.db";
+const uint8_t PATH_MAX = 64;
+const char *filepath = ".local/share/sqlite";
+const char *filename = "library.db";
+
 
 static int callback(void *NotUsed, int argc, char **argv, char **azColName)
 {
@@ -14,6 +18,18 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName)
    }
    printf("\n");
    return 0;
+}
+
+void print_help(void)
+{
+    printf("usage: myal MODE TARGET NAME [EPISODE|CHAPTER]          \n");
+    printf("possible modes are: get|set|add                         \n");
+    printf("possible targets are: anime|manga                       \n");
+    printf("EXAMPLES: myal get anime % | Prints all anime           \n");
+    printf("          myal set manga Murcielago 10 | Set chapter of " \
+    "Murcielago to 10\n");
+    printf("mode get is fuzzy; set and add have to match exactly    \n");
+    printf("\n");
 }
 
 void exit_with_error(sqlite3 *db, const char *msg)
@@ -59,6 +75,7 @@ void select_from_table(sqlite3 *db, char *tblName, char *qp)
     while(sqlite3_step(stmt) == SQLITE_ROW) {
         id = sqlite3_column_int(stmt, 0);
         name = sqlite3_column_text(stmt, 1);
+        value = sqlite3_column_text(stmt, 2);
         value = sqlite3_column_text(stmt, 2);
         status = sqlite3_column_text(stmt, 3);
         printf("%03d: %s, %s %s, %s\n", id, name, type, value, status);
@@ -145,6 +162,7 @@ int main(int argc, char **argv)
 {
     if (argc < 4) {
         fprintf(stderr, "missing argument...\n");
+        print_help();
         exit(69);
     }
     char *mode, *target, *name, *value, *status;
@@ -152,10 +170,13 @@ int main(int argc, char **argv)
     target = argv[2];
     name = argv[3];
 
+    char fullpath[PATH_MAX];
+    snprintf(fullpath, PATH_MAX, "%s/%s/%s", getenv("HOME"), filepath, filename);
+
     sqlite3 *db;
     int rc;
 
-    rc = sqlite3_open(filename, &db);
+    rc = sqlite3_open(fullpath, &db);
 
     if (rc) {
         exit_with_error(db, "Can't open database: ");
@@ -188,6 +209,7 @@ int main(int argc, char **argv)
         add_entry(db, target, name, value, status);
     } else {
         fprintf(stderr, "unknown option...\n");
+        print_help();
         sqlite3_close(db);
         exit(69);
     }

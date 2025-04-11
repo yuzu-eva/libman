@@ -25,12 +25,15 @@ just a number but rather in the form "Volume 6 Chapter 4", shortened to "V6CH4".
 When I'm done with an anime or manga, I set the episode or chapter to 0 and set
 the status to "done".  
 
-You need to set the filepath to your db-file in the main.c, but everything else
-should work out of the box.  
-The Makefile uses clang, because that's what I prefer, but you can change it
-to gcc in the second line. Or you could simply do  
+The database file is expected to be in "~/.local/share/sqlite/library.db".  
+To compile, do
+```bash
+make
 ```
-gcc -o myal main.c -lsqlite3
+&nbsp;
+To install it in /usr/local/bin/, do
+```bash
+make install
 ```
 
 ## Usage

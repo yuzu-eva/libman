@@ -10,6 +10,8 @@ sqlite3 database.
 
 ## Quickstart
 
+Only requires a C compiler and sqlite3. Should be installed on every
+system be default.  
 You need a database with tables `anime` and `manga`. Attached in this
 repo is a setup script for the database. Simply execute
 ```

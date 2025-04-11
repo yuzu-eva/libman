@@ -17,7 +17,6 @@ void select_from_table(sqlite3 *db, target_e target, char *qp)
     const unsigned char *name, *value, *status;
     const char *type;
     char *query_param = malloc(strlen(qp) + 2);
-    int id;
 
     switch (target) {
     case ANIME:
@@ -45,11 +44,10 @@ void select_from_table(sqlite3 *db, target_e target, char *qp)
     sqlite3_bind_text(stmt, 1, query_param, -1, SQLITE_TRANSIENT);
 
     while(sqlite3_step(stmt) == SQLITE_ROW) {
-        id = sqlite3_column_int(stmt, 0);
         name = sqlite3_column_text(stmt, 1);
         value = sqlite3_column_text(stmt, 2);
         status = sqlite3_column_text(stmt, 3);
-        printf("%03d: %s, %s %s, %s\n", id, name, type, value, status);
+        printf("%s, %s %s, %s\n", name, type, value, status);
         found = 1;
     }
 

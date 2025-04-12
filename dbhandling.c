@@ -8,7 +8,7 @@ void exit_with_error(sqlite3 *db, const char *msg)
     exit(69);
 }
 
-void select_from_table(sqlite3 *db, target_e target, char *qp)
+void select_from_table(sqlite3 *db, args_e target, char *qp)
 {
     char *sql;
     int rc;
@@ -59,7 +59,7 @@ void select_from_table(sqlite3 *db, target_e target, char *qp)
     free(query_param);
 }
 
-void update_entry(sqlite3 *db, target_e target, char *qp, char *value, char *status)
+void update_entry(sqlite3 *db, args_e target, char *qp, char *value, char *status)
 {
     char *sql;
     int rc;
@@ -110,7 +110,7 @@ void update_entry(sqlite3 *db, target_e target, char *qp, char *value, char *sta
     sqlite3_finalize(stmt);
 }
 
-void add_entry(sqlite3 *db, target_e target, char *name, char *value, char *status)
+void add_entry(sqlite3 *db, args_e target, char *name, char *value, char *status)
 {
     char *sql;
     int rc;

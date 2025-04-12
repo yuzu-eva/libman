@@ -8,7 +8,7 @@ const char *filepath = ".local/share/sqlite";
 const char *filename = "library.db";
 
 typedef struct {
-    target_e target;
+    args_e target;
     char *name;
     char *author;
     char *value;
@@ -30,7 +30,7 @@ void print_help(void)
 
 entry_t *set_entry(entry_t *entry, int argc, char **argv)
 {
-    entry->target = str2enum_target(argv[2]);
+    entry->target = str2enum(argv[2]);
     entry->name = argv[3];
     if (argc == 5) {
         entry->value = argv[4];
@@ -50,9 +50,9 @@ int main(int argc, char **argv)
         exit(69);
     }
 
-    mode_e mode;
+    args_e mode;
     entry_t *entry = malloc(sizeof(entry_t));
-    mode = str2enum_mode(argv[1]);
+    mode = str2enum(argv[1]);
 
     char fullpath[PATH_MAX];
     snprintf(fullpath, PATH_MAX, "%s/%s/%s", getenv("HOME"), filepath, filename);

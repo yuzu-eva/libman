@@ -12,6 +12,6 @@
 void exit_with_error(sqlite3 *db, const char *msg);
 void select_from_table(sqlite3 *db, args_e target, char *qp);
 void update_entry(sqlite3 *db, args_e target, char *qp, char *value, char *status);
-void add_entry(sqlite3 *db, args_e target, char *name, char *value, char *status);
+void add_entry(sqlite3 *db, args_e target, char *name, char *author, char *value, char *status);
 
 #endif

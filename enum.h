@@ -9,6 +9,7 @@ typedef enum {
     ADD,
     ANIME,
     MANGA,
+    BOOK,
 } args_e;
 
 static const struct {
@@ -20,6 +21,7 @@ static const struct {
     {ADD, "add"},
     {ANIME, "anime"},
     {MANGA, "manga"},
+    {BOOK, "book"},
 };
 
 args_e str2enum(const char *str);

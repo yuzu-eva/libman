@@ -20,11 +20,12 @@ void print_help(void)
     printf("\n");
     printf("usage: myal MODE TARGET NAME [EPISODE|CHAPTER]          \n");
     printf("possible modes are: get|set|add                         \n");
-    printf("possible targets are: anime|manga                       \n");
-    printf("EXAMPLES: myal get anime %% | Prints all anime           \n");
+    printf("possible targets are: anime|manga|book                  \n");
+    printf("EXAMPLES: myal get anime %% | Prints all anime          \n");
     printf("          myal set manga Murcielago 10 | Set chapter of " \
     "Murcielago to 10\n");
     printf("mode get is fuzzy; set and add have to match exactly    \n");
+    printf("See more examples in the readme.                        \n");
     printf("\n");
 }
 
@@ -32,12 +33,24 @@ entry_t *set_entry(entry_t *entry, int argc, char **argv)
 {
     entry->target = str2enum(argv[2]);
     entry->name = argv[3];
-    if (argc == 5) {
-        entry->value = argv[4];
-        entry->status = NULL;
-    } else if (argc == 6) {
-        entry->value = argv[4];
-        entry->status = argv[5];
+    if (entry->target == BOOK) {
+        entry->author = argv[4];
+        if (argc == 6) {
+            entry->value = argv[5];
+            entry->status = NULL;
+        } else if (argc == 7) {
+            entry->value = argv[5];
+            entry->status = argv[6];
+        }
+    } else {
+        entry->author = NULL;
+        if (argc == 5) {
+            entry->value = argv[4];
+            entry->status = NULL;
+        } else if (argc == 6) {
+            entry->value = argv[4];
+            entry->status = argv[5];
+        }
     }
     return entry;
 }
@@ -87,7 +100,7 @@ int main(int argc, char **argv)
             exit(69);
         }
         set_entry(entry, argc, argv);
-        add_entry(db, entry->target, entry->name, entry->value, entry->status);
+        add_entry(db, entry->target, entry->name, entry->author, entry->value, entry->status);
         break;
     default:
         fprintf(stderr, "unknown option...\n");
